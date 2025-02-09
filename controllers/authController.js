@@ -1,6 +1,8 @@
 // Import necessary modules
 const bcrypt = require("bcryptjs"); // For password hiding
 
+const User = require("../models/User"); // Importing user model
+
 // Controller function to register a new user
 const registerUser = async (req, res) => {
     try {
@@ -12,20 +14,36 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: "All fields are required"});
         }
 
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            return res.status(400).json({ message: "Username or Email already exists" });
+        }
+
         // Hash the password before storing it
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Would normally save the user in a DB
-        // For now, return the hashed password as a placeholder
-        return res.status(201).json({
-            message: "User registered successfully!",
+
+        const newUser = new User({
             username,
             email,
-            hashedPassword, // Will not be returned in a real-world app
+            password: hashedPassword,
+        });
+
+        await newUser.save();
+
+        // Respond with success message
+        res.status(201).json({
+            message: "User registered successfully!",
+            user: {
+                id: newUser._id,
+                username: newUser.username,
+                email: newUser.email
+            },
         });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message});
+        console.error("Error in registerUser:", error.message);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 

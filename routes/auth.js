@@ -1,11 +1,21 @@
 const express = require("express");
 const router = express.Router();
+const { registerUser, loginUser } = require("../controllers/authController"); // Import controllers
+const verifyToken = require("../middleware/authMiddleware"); // Import middleware
 
-// Import the authentication controller
-const { registerUser } = require("../controllers/authController");
+
+router.post("/register", registerUser); // Register Route
+router.post("/login", loginUser); // Login Route
 
 // Define the '/register' route
 router.post("/register", registerUser);
 
-// Export the router so it can be used in 'server.js'
+// Protected route example: Fetch user details
+router.get("/me", verifyToken, (req, res) => {
+    res.json({
+        message: "Protected route accessed!",
+        user: req.user, // Contains the decoded JWT user data
+    });
+});
+
 module.exports = router;
